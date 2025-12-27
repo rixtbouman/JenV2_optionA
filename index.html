@@ -331,12 +331,139 @@
             background: #333;
         }
 
-        .coming-soon {
+        .generate-btn:not(:disabled) {
+            cursor: pointer;
+            opacity: 1;
+            background: #0000FF;
+        }
+
+        .generate-btn:not(:disabled):hover {
+            background: #0000CC;
+        }
+
+        .generate-btn.loading {
+            background: #333;
+            cursor: wait;
+        }
+
+        .generate-btn.loading::after {
+            content: '';
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            margin-left: 10px;
+            border: 2px solid #666;
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* API Key Section */
+        .api-key-section {
+            display: none;
+            margin-bottom: 16px;
+            padding: 16px;
+            background: #0d0d0d;
+            border: 1px solid #333;
+            border-radius: 6px;
+        }
+
+        .api-key-section.visible {
+            display: block;
+        }
+
+        .api-key-label {
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #888;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .api-key-input {
+            width: 100%;
+            padding: 12px 14px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 6px;
+            color: #FFFFFF;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+
+        .api-key-input:focus {
+            outline: none;
+            border-color: #0000FF;
+            box-shadow: 0 0 0 2px rgba(0, 0, 255, 0.2);
+        }
+
+        .api-key-input::placeholder {
+            color: #555;
+        }
+
+        .api-key-help {
+            font-size: 0.7rem;
+            color: #555;
+            margin-top: 8px;
+        }
+
+        .api-key-help a {
+            color: #0000FF;
+            text-decoration: none;
+        }
+
+        .api-key-help a:hover {
+            text-decoration: underline;
+        }
+
+        /* Error message */
+        .error-message {
+            background: rgba(255, 0, 0, 0.1);
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            color: #ff6666;
+            font-size: 0.85rem;
+            display: none;
+        }
+
+        .error-message.visible {
+            display: block;
+        }
+
+        /* Generated scenario styling */
+        .scenario-generated {
+            color: #FFFFFF;
+            white-space: pre-wrap;
+            line-height: 1.8;
+        }
+
+        .scenario-meta {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid #333;
+            font-size: 0.75rem;
+            color: #666;
+        }
+
+        .generate-hint {
             font-size: 0.7rem;
             color: #666;
             text-align: center;
             margin-top: 10px;
             letter-spacing: 1px;
+        }
+
+        .generate-hint.hidden {
+            display: none;
         }
 
         /* Footer */
@@ -475,7 +602,7 @@
             <div class="section-label">SCENARIO OUTPUT</div>
             <div class="scenario-box">
                 <div class="scenario-placeholder" id="scenario-output">
-[Scenario will be generated here once API is connected]
+[Scenario will be generated here]
 
 <span class="highlight">Your selections:</span>
 • Archetype: <span id="summary-archetype">—</span>
@@ -483,8 +610,14 @@
 • Context: Ministry of Justice and Security (JenV), focusing on AI, Quantum, and Biotech
                 </div>
             </div>
-            <button class="generate-btn" disabled>Generate Scenario</button>
-            <p class="coming-soon">Coming soon</p>
+            <div class="error-message" id="error-message"></div>
+            <div class="api-key-section" id="api-key-section">
+                <label class="api-key-label" for="api-key">GEMINI API KEY</label>
+                <input type="password" class="api-key-input" id="api-key" placeholder="Enter your Gemini API key...">
+                <p class="api-key-help">Get your API key from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a></p>
+            </div>
+            <button class="generate-btn" id="generate-btn" disabled>Generate Scenario</button>
+            <p class="generate-hint" id="generate-hint">Select all four axes to enable generation</p>
         </section>
     </div>
 
@@ -533,6 +666,18 @@
             }
         };
 
+        // Axis labels for display
+        const axisLabels = {
+            'abundance': 'Abundance',
+            'constraints': 'Constraints',
+            'continuity': 'Continuity',
+            'rupture': 'Rupture',
+            'technological': 'Technological',
+            'value-driven': 'Value-driven',
+            'centralized': 'Centralized',
+            'decentralized': 'Decentralized'
+        };
+
         // DOM elements
         const axisA = document.getElementById('axis-a');
         const axisB = document.getElementById('axis-b');
@@ -552,6 +697,13 @@
         const uploadedImage = document.getElementById('uploadedImage');
         const removeImageBtn = document.getElementById('removeImage');
 
+        const generateBtn = document.getElementById('generate-btn');
+        const generateHint = document.getElementById('generate-hint');
+        const apiKeySection = document.getElementById('api-key-section');
+        const apiKeyInput = document.getElementById('api-key');
+        const scenarioOutput = document.getElementById('scenario-output');
+        const errorMessage = document.getElementById('error-message');
+
         // Status dots
         const dots = {
             a: document.getElementById('dot-a'),
@@ -559,6 +711,23 @@
             c: document.getElementById('dot-c'),
             d: document.getElementById('dot-d')
         };
+
+        // Check if all selections are made
+        function allSelectionsComplete() {
+            return axisA.value && axisB.value && axisC.value && axisD.value;
+        }
+
+        // Update button state
+        function updateButtonState() {
+            const complete = allSelectionsComplete();
+            generateBtn.disabled = !complete;
+            generateHint.classList.toggle('hidden', complete);
+
+            // Show API key section if selections are complete
+            if (complete && !apiKeySection.classList.contains('visible')) {
+                apiKeySection.classList.add('visible');
+            }
+        }
 
         // Update archetype based on A + B
         function updateArchetype() {
@@ -581,6 +750,8 @@
                 archetypeDesc.innerHTML = '<span class="placeholder-state">Select Axis A and B to reveal archetype</span>';
                 summaryArchetype.textContent = '—';
             }
+
+            updateButtonState();
         }
 
         // Update nuance based on C + D
@@ -604,6 +775,143 @@
                 nuanceDesc.innerHTML = '<span class="placeholder-state">Select Axis C and D to reveal nuance</span>';
                 summaryNuance.textContent = '—';
             }
+
+            updateButtonState();
+        }
+
+        // Show error message
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('visible');
+        }
+
+        // Hide error message
+        function hideError() {
+            errorMessage.classList.remove('visible');
+        }
+
+        // Generate scenario using Gemini API
+        async function generateScenario() {
+            const apiKey = apiKeyInput.value.trim();
+
+            if (!apiKey) {
+                showError('Please enter your Gemini API key');
+                apiKeyInput.focus();
+                return;
+            }
+
+            if (!allSelectionsComplete()) {
+                showError('Please complete all axis selections');
+                return;
+            }
+
+            // Get current selections
+            const a = axisA.value;
+            const b = axisB.value;
+            const c = axisC.value;
+            const d = axisD.value;
+
+            const archetypeKey = `${a}-${b}`;
+            const nuanceKey = `${c}-${d}`;
+            const archetype = archetypes[archetypeKey];
+            const nuance = nuances[nuanceKey];
+
+            // Build the prompt
+            const prompt = `You are a futures strategist writing for the Dutch Ministry of Justice and Security (JenV).
+
+Generate a scenario based on:
+- Archetype: ${archetype.name}
+- Resource Horizon: ${axisLabels[a]}
+- Systemic Structure: ${axisLabels[b]}
+- Primary Driver: ${axisLabels[c]}
+- Social Organization: ${axisLabels[d]}
+
+JenV Context: Government ministry responsible for justice, security, law enforcement, cybersecurity, and protecting citizens' rights. Key agencies include Police, NCSC (cybersecurity), Public Prosecution Service, Immigration Service. They are preparing for quantum computing threats to encryption.
+
+Requirements:
+- Length: 150-200 words (1 minute read)
+- Make all four binary choices recognizable in the scenario
+- Use compelling storytelling with a specific moment or character
+- Focus on AI, Quantum Computing, or Biotech implications
+- English level B2 (clear, accessible)
+- Use government language (citizens, not customers)
+- Reference actual JenV agencies where relevant`;
+
+            // Show loading state
+            hideError();
+            generateBtn.disabled = true;
+            generateBtn.classList.add('loading');
+            generateBtn.textContent = 'Generating';
+
+            scenarioOutput.innerHTML = '<span class="placeholder-state">Generating scenario...</span>';
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: prompt
+                            }]
+                        }],
+                        generationConfig: {
+                            temperature: 0.8,
+                            maxOutputTokens: 500,
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    if (response.status === 400) {
+                        throw new Error('Invalid API key or request. Please check your Gemini API key.');
+                    } else if (response.status === 403) {
+                        throw new Error('API key does not have permission. Please check your Gemini API key settings.');
+                    } else if (response.status === 429) {
+                        throw new Error('Rate limit exceeded. Please wait a moment and try again.');
+                    } else {
+                        throw new Error(errorData.error?.message || `API error: ${response.status}`);
+                    }
+                }
+
+                const data = await response.json();
+
+                if (!data.candidates || !data.candidates[0]?.content?.parts?.[0]?.text) {
+                    throw new Error('No response generated. Please try again.');
+                }
+
+                const generatedText = data.candidates[0].content.parts[0].text;
+
+                // Display the generated scenario
+                scenarioOutput.innerHTML = `<div class="scenario-generated">${generatedText}</div>
+<div class="scenario-meta">
+<span class="highlight">Your selections:</span>
+• Archetype: ${archetype.name}
+• Nuance: ${nuance.name}
+• Resource Horizon: ${axisLabels[a]} | Systemic Structure: ${axisLabels[b]}
+• Primary Driver: ${axisLabels[c]} | Social Organization: ${axisLabels[d]}
+</div>`;
+
+            } catch (error) {
+                console.error('Generation error:', error);
+                showError(error.message || 'Failed to generate scenario. Please try again.');
+
+                // Reset scenario output
+                scenarioOutput.innerHTML = `[Scenario generation failed]
+
+<span class="highlight">Your selections:</span>
+• Archetype: <span id="summary-archetype">${archetype.name}</span>
+• Nuance: <span id="summary-nuance">${nuance.name}</span>
+• Context: Ministry of Justice and Security (JenV), focusing on AI, Quantum, and Biotech`;
+            } finally {
+                // Reset button state
+                generateBtn.classList.remove('loading');
+                generateBtn.textContent = 'Generate Scenario';
+                generateBtn.disabled = false;
+            }
         }
 
         // Event listeners for selects
@@ -611,6 +919,16 @@
         axisB.addEventListener('change', updateArchetype);
         axisC.addEventListener('change', updateNuance);
         axisD.addEventListener('change', updateNuance);
+
+        // Generate button click
+        generateBtn.addEventListener('click', generateScenario);
+
+        // Allow Enter key in API input to trigger generation
+        apiKeyInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !generateBtn.disabled) {
+                generateScenario();
+            }
+        });
 
         // Image upload functionality
         uploadArea.addEventListener('click', (e) => {
