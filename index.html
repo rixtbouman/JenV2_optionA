@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Futures Exploration Tool — JenV</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #000000;
+            color: #FFFFFF;
+            font-family: 'Roboto Mono', monospace;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Decorative circles - QDNL superposition style */
+        .circle {
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .circle-1 {
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(0, 0, 255, 0.15) 0%, transparent 70%);
+            top: -150px;
+            right: -100px;
+        }
+
+        .circle-2 {
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(255, 0, 255, 0.12) 0%, transparent 70%);
+            bottom: 100px;
+            left: -100px;
+        }
+
+        .circle-3 {
+            width: 250px;
+            height: 250px;
+            background: radial-gradient(circle, rgba(255, 0, 0, 0.1) 0%, transparent 70%);
+            bottom: -50px;
+            right: 20%;
+        }
+
+        .circle-4 {
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(0, 0, 255, 0.1) 0%, transparent 70%);
+            top: 40%;
+            left: 10%;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px 60px;
+            position: relative;
+            z-index: 1;
+        }
+
+        h1 {
+            font-family: Arial, sans-serif;
+            font-weight: 200;
+            font-size: 2.8rem;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            color: #888;
+            margin-bottom: 40px;
+            letter-spacing: 1px;
+        }
+
+        .section {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 28px;
+            margin-bottom: 24px;
+        }
+
+        .section-label {
+            font-size: 0.75rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #888;
+            margin-bottom: 16px;
+            font-weight: 500;
+        }
+
+        /* Image Upload Section */
+        .upload-area {
+            border: 2px dashed #444;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area:hover {
+            border-color: #0000FF;
+            background: rgba(0, 0, 255, 0.05);
+        }
+
+        .upload-area.has-image {
+            padding: 0;
+            border-style: solid;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            opacity: 0.6;
+        }
+
+        .upload-text {
+            font-size: 0.85rem;
+            color: #888;
+            letter-spacing: 1px;
+        }
+
+        .upload-input {
+            display: none;
+        }
+
+        .uploaded-image {
+            width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+            display: none;
+        }
+
+        .upload-area.has-image .uploaded-image {
+            display: block;
+        }
+
+        .upload-area.has-image .upload-placeholder {
+            display: none;
+        }
+
+        .remove-image {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 0, 0, 0.8);
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .upload-area.has-image .remove-image {
+            display: flex;
+        }
+
+        .remove-image:hover {
+            background: rgba(255, 0, 0, 1);
+        }
+
+        /* Card Selection */
+        .axis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 20px;
+        }
+
+        .axis-item {
+            margin-bottom: 8px;
+        }
+
+        .axis-label {
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #FF00FF;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .axis-description {
+            font-size: 0.75rem;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        select {
+            width: 100%;
+            padding: 14px 16px;
+            background: #0d0d0d;
+            border: 1px solid #333;
+            border-radius: 6px;
+            color: #FFFFFF;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+        }
+
+        select:hover {
+            border-color: #555;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #0000FF;
+            box-shadow: 0 0 0 2px rgba(0, 0, 255, 0.2);
+        }
+
+        /* Results Section */
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+            .axis-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .result-box {
+            background: #0d0d0d;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 20px;
+        }
+
+        .result-label {
+            font-size: 0.65rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .archetype-name {
+            font-family: Arial, sans-serif;
+            font-weight: 200;
+            font-size: 1.6rem;
+            color: #0000FF;
+            margin-bottom: 12px;
+        }
+
+        .nuance-name {
+            font-family: Arial, sans-serif;
+            font-weight: 200;
+            font-size: 1.6rem;
+            color: #FF00FF;
+            margin-bottom: 12px;
+        }
+
+        .result-description {
+            font-size: 0.8rem;
+            color: #aaa;
+            line-height: 1.6;
+        }
+
+        .placeholder-state {
+            color: #555;
+            font-style: italic;
+        }
+
+        /* Scenario Section */
+        .scenario-box {
+            background: #0d0d0d;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .scenario-placeholder {
+            font-size: 0.85rem;
+            color: #666;
+            line-height: 1.8;
+            white-space: pre-line;
+        }
+
+        .scenario-placeholder .highlight {
+            color: #888;
+        }
+
+        .generate-btn {
+            width: 100%;
+            padding: 16px 24px;
+            background: #0000FF;
+            border: none;
+            border-radius: 6px;
+            color: #FFFFFF;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: not-allowed;
+            opacity: 0.5;
+            transition: all 0.2s ease;
+        }
+
+        .generate-btn:disabled {
+            background: #333;
+        }
+
+        .coming-soon {
+            font-size: 0.7rem;
+            color: #666;
+            text-align: center;
+            margin-top: 10px;
+            letter-spacing: 1px;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 30px 20px;
+            border-top: 1px solid #1a1a1a;
+            margin-top: 20px;
+        }
+
+        .powered-by {
+            font-size: 0.7rem;
+            color: #555;
+            letter-spacing: 1px;
+        }
+
+        .powered-by span {
+            color: #FF00FF;
+        }
+
+        /* Selection indicator */
+        .selection-status {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #333;
+            transition: background 0.3s;
+        }
+
+        .status-dot.active {
+            background: #0000FF;
+        }
+    </style>
+</head>
+<body>
+    <!-- Decorative circles -->
+    <div class="circle circle-1"></div>
+    <div class="circle circle-2"></div>
+    <div class="circle circle-3"></div>
+    <div class="circle circle-4"></div>
+
+    <div class="container">
+        <header>
+            <h1>Futures Exploration Tool</h1>
+            <p class="subtitle">Ministry of Justice and Security (JenV)</p>
+        </header>
+
+        <!-- Image Upload Section -->
+        <section class="section">
+            <div class="section-label">UPLOAD YOUR CARD SPREAD</div>
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-placeholder">
+                    <div class="upload-icon">&#x1F4F7;</div>
+                    <p class="upload-text">Click to upload or take a photo of your 4 cards</p>
+                </div>
+                <img class="uploaded-image" id="uploadedImage" alt="Card spread">
+                <button class="remove-image" id="removeImage" type="button">&times;</button>
+                <input type="file" class="upload-input" id="imageInput" accept="image/*" capture="environment">
+            </div>
+        </section>
+
+        <!-- Card Selection Section -->
+        <section class="section">
+            <div class="section-label">CARD SELECTION</div>
+            <div class="selection-status">
+                <div class="status-dot" id="dot-a"></div>
+                <div class="status-dot" id="dot-b"></div>
+                <div class="status-dot" id="dot-c"></div>
+                <div class="status-dot" id="dot-d"></div>
+            </div>
+            <div class="axis-grid">
+                <div class="axis-item">
+                    <div class="axis-label">AXIS A — RESOURCE HORIZON</div>
+                    <select id="axis-a">
+                        <option value="">Select...</option>
+                        <option value="abundance">Abundance — resources are plentiful, expansion possible</option>
+                        <option value="constraints">Constraints — resources are limited, scarcity</option>
+                    </select>
+                </div>
+                <div class="axis-item">
+                    <div class="axis-label">AXIS B — SYSTEMIC STRUCTURE</div>
+                    <select id="axis-b">
+                        <option value="">Select...</option>
+                        <option value="continuity">Continuity — current systems remain stable</option>
+                        <option value="rupture">Rupture — systems break down or transform radically</option>
+                    </select>
+                </div>
+                <div class="axis-item">
+                    <div class="axis-label">AXIS C — PRIMARY DRIVER</div>
+                    <select id="axis-c">
+                        <option value="">Select...</option>
+                        <option value="technological">Technological — change driven by AI, quantum, biotech</option>
+                        <option value="value-driven">Value-driven — change driven by culture, ethics, beliefs</option>
+                    </select>
+                </div>
+                <div class="axis-item">
+                    <div class="axis-label">AXIS D — SOCIAL ORGANIZATION</div>
+                    <select id="axis-d">
+                        <option value="">Select...</option>
+                        <option value="centralized">Centralized — top-down control by government/corporations</option>
+                        <option value="decentralized">Decentralized — bottom-up, distributed, local networks</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section class="section">
+            <div class="section-label">ARCHETYPE & NUANCE</div>
+            <div class="results-grid">
+                <div class="result-box">
+                    <div class="result-label">ARCHETYPE (A + B)</div>
+                    <div class="archetype-name" id="archetype-name">—</div>
+                    <div class="result-description" id="archetype-desc">
+                        <span class="placeholder-state">Select Axis A and B to reveal archetype</span>
+                    </div>
+                </div>
+                <div class="result-box">
+                    <div class="result-label">NUANCE (C + D)</div>
+                    <div class="nuance-name" id="nuance-name">—</div>
+                    <div class="result-description" id="nuance-desc">
+                        <span class="placeholder-state">Select Axis C and D to reveal nuance</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Scenario Section -->
+        <section class="section">
+            <div class="section-label">SCENARIO OUTPUT</div>
+            <div class="scenario-box">
+                <div class="scenario-placeholder" id="scenario-output">
+[Scenario will be generated here once API is connected]
+
+<span class="highlight">Your selections:</span>
+• Archetype: <span id="summary-archetype">—</span>
+• Nuance: <span id="summary-nuance">—</span>
+• Context: Ministry of Justice and Security (JenV), focusing on AI, Quantum, and Biotech
+                </div>
+            </div>
+            <button class="generate-btn" disabled>Generate Scenario</button>
+            <p class="coming-soon">Coming soon</p>
+        </section>
+    </div>
+
+    <footer>
+        <p class="powered-by">Powered by <span>Quantum Delta NL</span></p>
+    </footer>
+
+    <script>
+        // Archetype definitions
+        const archetypes = {
+            'abundance-continuity': {
+                name: 'CONTINUED GROWTH',
+                description: 'The current system expands successfully. Resources remain available, institutions hold, and society continues on its current trajectory—but amplified.'
+            },
+            'constraints-continuity': {
+                name: 'DISCIPLINE',
+                description: 'Resources are constrained, but society maintains order through careful management, regulation, and behavioral adaptation. Stability through control.'
+            },
+            'constraints-rupture': {
+                name: 'COLLAPSE',
+                description: 'Systems break under pressure. Resource scarcity combines with institutional failure, leading to fragmentation and disorder.'
+            },
+            'abundance-rupture': {
+                name: 'TRANSFORMATION',
+                description: 'A radical shift creates something entirely new. Abundance meets disruption, enabling post-scarcity or paradigm-changing innovation.'
+            }
+        };
+
+        // Nuance definitions
+        const nuances = {
+            'technological-centralized': {
+                name: 'Technocratic',
+                description: 'Top-down control using advanced technology'
+            },
+            'technological-decentralized': {
+                name: 'Networked',
+                description: 'Distributed tech empowers individuals and communities'
+            },
+            'value-driven-centralized': {
+                name: 'Institutional',
+                description: 'Strong governments or organizations drive change through shared values'
+            },
+            'value-driven-decentralized': {
+                name: 'Grassroots',
+                description: 'Communities and movements shape the future through cultural shift'
+            }
+        };
+
+        // DOM elements
+        const axisA = document.getElementById('axis-a');
+        const axisB = document.getElementById('axis-b');
+        const axisC = document.getElementById('axis-c');
+        const axisD = document.getElementById('axis-d');
+
+        const archetypeName = document.getElementById('archetype-name');
+        const archetypeDesc = document.getElementById('archetype-desc');
+        const nuanceName = document.getElementById('nuance-name');
+        const nuanceDesc = document.getElementById('nuance-desc');
+
+        const summaryArchetype = document.getElementById('summary-archetype');
+        const summaryNuance = document.getElementById('summary-nuance');
+
+        const uploadArea = document.getElementById('uploadArea');
+        const imageInput = document.getElementById('imageInput');
+        const uploadedImage = document.getElementById('uploadedImage');
+        const removeImageBtn = document.getElementById('removeImage');
+
+        // Status dots
+        const dots = {
+            a: document.getElementById('dot-a'),
+            b: document.getElementById('dot-b'),
+            c: document.getElementById('dot-c'),
+            d: document.getElementById('dot-d')
+        };
+
+        // Update archetype based on A + B
+        function updateArchetype() {
+            const a = axisA.value;
+            const b = axisB.value;
+
+            dots.a.classList.toggle('active', a !== '');
+            dots.b.classList.toggle('active', b !== '');
+
+            if (a && b) {
+                const key = `${a}-${b}`;
+                const archetype = archetypes[key];
+                if (archetype) {
+                    archetypeName.textContent = archetype.name;
+                    archetypeDesc.innerHTML = archetype.description;
+                    summaryArchetype.textContent = archetype.name;
+                }
+            } else {
+                archetypeName.textContent = '—';
+                archetypeDesc.innerHTML = '<span class="placeholder-state">Select Axis A and B to reveal archetype</span>';
+                summaryArchetype.textContent = '—';
+            }
+        }
+
+        // Update nuance based on C + D
+        function updateNuance() {
+            const c = axisC.value;
+            const d = axisD.value;
+
+            dots.c.classList.toggle('active', c !== '');
+            dots.d.classList.toggle('active', d !== '');
+
+            if (c && d) {
+                const key = `${c}-${d}`;
+                const nuance = nuances[key];
+                if (nuance) {
+                    nuanceName.textContent = nuance.name;
+                    nuanceDesc.innerHTML = nuance.description;
+                    summaryNuance.textContent = nuance.name;
+                }
+            } else {
+                nuanceName.textContent = '—';
+                nuanceDesc.innerHTML = '<span class="placeholder-state">Select Axis C and D to reveal nuance</span>';
+                summaryNuance.textContent = '—';
+            }
+        }
+
+        // Event listeners for selects
+        axisA.addEventListener('change', updateArchetype);
+        axisB.addEventListener('change', updateArchetype);
+        axisC.addEventListener('change', updateNuance);
+        axisD.addEventListener('change', updateNuance);
+
+        // Image upload functionality
+        uploadArea.addEventListener('click', (e) => {
+            if (e.target !== removeImageBtn) {
+                imageInput.click();
+            }
+        });
+
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    uploadedImage.src = e.target.result;
+                    uploadArea.classList.add('has-image');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        removeImageBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            uploadedImage.src = '';
+            uploadArea.classList.remove('has-image');
+            imageInput.value = '';
+        });
+
+        // Drag and drop support
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#0000FF';
+            uploadArea.style.background = 'rgba(0, 0, 255, 0.05)';
+        });
+
+        uploadArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '';
+            uploadArea.style.background = '';
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '';
+            uploadArea.style.background = '';
+
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    uploadedImage.src = e.target.result;
+                    uploadArea.classList.add('has-image');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+</body>
+</html>
