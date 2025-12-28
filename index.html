@@ -545,24 +545,24 @@
                     <div class="axis-label">AXIS A — RESOURCE HORIZON</div>
                     <select id="axis-a">
                         <option value="">Select...</option>
-                        <option value="abundance">Abundance — resources are plentiful, expansion possible</option>
-                        <option value="constraints">Constraints — resources are limited, scarcity</option>
+                        <option value="plenty">Plenty — resources are plentiful, expansion possible</option>
+                        <option value="limits">Limits — resources are limited, scarcity</option>
                     </select>
                 </div>
                 <div class="axis-item">
                     <div class="axis-label">AXIS B — SYSTEMIC STRUCTURE</div>
                     <select id="axis-b">
                         <option value="">Select...</option>
-                        <option value="continuity">Continuity — current systems remain stable</option>
-                        <option value="rupture">Rupture — systems break down or transform radically</option>
+                        <option value="stable">Stable — current systems remain stable</option>
+                        <option value="breaks">Breaks — systems break down or transform radically</option>
                     </select>
                 </div>
                 <div class="axis-item">
                     <div class="axis-label">AXIS C — PRIMARY DRIVER</div>
                     <select id="axis-c">
                         <option value="">Select...</option>
-                        <option value="technological">Technological — change driven by AI, quantum, biotech</option>
-                        <option value="value-driven">Value-driven — change driven by culture, ethics, beliefs</option>
+                        <option value="technology">Technology — change driven by AI, quantum, biotech</option>
+                        <option value="values">Values — change driven by culture, ethics, beliefs</option>
                     </select>
                 </div>
                 <div class="axis-item">
@@ -630,10 +630,19 @@
         const SUPABASE_URL = 'https://ccfyvpqtxypiawbbftgs.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_JPivpcZO6gnwLveglzicNw_8vzrpo59';
 
-        // Fetch sector knowledge from Supabase
-        async function fetchSectorKnowledge() {
+        // Data cache
+        const dataCache = {
+            archetypes: null,
+            archetypeMapping: null,
+            writingGuide: null,
+            sectorKnowledge: null,
+            loaded: false
+        };
+
+        // Generic Supabase fetch function
+        async function fetchFromSupabase(table) {
             try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/sector_knowledge?select=*`, {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=*`, {
                     headers: {
                         'apikey': SUPABASE_ANON_KEY,
                         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
@@ -642,34 +651,68 @@
                 });
 
                 if (!response.ok) {
-                    console.warn('Failed to fetch sector knowledge:', response.status);
+                    console.warn(`Failed to fetch ${table}:`, response.status);
                     return null;
                 }
 
-                const data = await response.json();
-                return data;
+                return await response.json();
             } catch (error) {
-                console.warn('Error fetching sector knowledge:', error);
+                console.warn(`Error fetching ${table}:`, error);
                 return null;
             }
         }
 
-        // Format sector knowledge for prompt
-        function formatSectorKnowledge(knowledge) {
-            if (!knowledge || knowledge.length === 0) {
-                return '';
-            }
+        // Load all data from Supabase and cache it
+        async function loadAllData() {
+            if (dataCache.loaded) return;
 
-            // Group by category
+            console.log('Loading data from Supabase...');
+
+            const [archetypes, archetypeMapping, writingGuide, sectorKnowledge] = await Promise.all([
+                fetchFromSupabase('archetypes'),
+                fetchFromSupabase('archetype_mapping'),
+                fetchFromSupabase('writing_guide'),
+                fetchFromSupabase('sector_knowledge')
+            ]);
+
+            dataCache.archetypes = archetypes || [];
+            dataCache.archetypeMapping = archetypeMapping || [];
+            dataCache.writingGuide = writingGuide || [];
+            dataCache.sectorKnowledge = sectorKnowledge || [];
+            dataCache.loaded = true;
+
+            console.log('Data loaded:', {
+                archetypes: dataCache.archetypes.length,
+                mappings: dataCache.archetypeMapping.length,
+                writingGuide: dataCache.writingGuide.length,
+                sectorKnowledge: dataCache.sectorKnowledge.length
+            });
+        }
+
+        // Find mapping for current selections
+        function findMapping(a, b, c, d) {
+            return dataCache.archetypeMapping.find(m =>
+                m.axis_a === a && m.axis_b === b && m.axis_c === c && m.axis_d === d
+            );
+        }
+
+        // Find archetype by ID
+        function findArchetype(id) {
+            return dataCache.archetypes.find(a => a.id === id);
+        }
+
+        // Format sector knowledge for prompt
+        function formatSectorKnowledge() {
+            const knowledge = dataCache.sectorKnowledge;
+            if (!knowledge || knowledge.length === 0) return '';
+
             const grouped = knowledge.reduce((acc, item) => {
-                if (!acc[item.category]) {
-                    acc[item.category] = [];
-                }
+                if (!acc[item.category]) acc[item.category] = [];
                 acc[item.category].push(item);
                 return acc;
             }, {});
 
-            let formatted = '\n\nSECTOR KNOWLEDGE BASE:\n';
+            let formatted = '\n\n=== SECTOR KNOWLEDGE BASE ===\n';
             for (const [category, items] of Object.entries(grouped)) {
                 formatted += `\n[${category.toUpperCase()}]\n`;
                 for (const item of items) {
@@ -680,57 +723,34 @@
             return formatted;
         }
 
-        // Archetype definitions
-        const archetypes = {
-            'abundance-continuity': {
-                name: 'CONTINUED GROWTH',
-                description: 'The current system expands successfully. Resources remain available, institutions hold, and society continues on its current trajectory—but amplified.'
-            },
-            'constraints-continuity': {
-                name: 'DISCIPLINE',
-                description: 'Resources are constrained, but society maintains order through careful management, regulation, and behavioral adaptation. Stability through control.'
-            },
-            'constraints-rupture': {
-                name: 'COLLAPSE',
-                description: 'Systems break under pressure. Resource scarcity combines with institutional failure, leading to fragmentation and disorder.'
-            },
-            'abundance-rupture': {
-                name: 'TRANSFORMATION',
-                description: 'A radical shift creates something entirely new. Abundance meets disruption, enabling post-scarcity or paradigm-changing innovation.'
-            }
-        };
+        // Format archetype data for prompt
+        function formatArchetypeForPrompt(archetype) {
+            if (!archetype) return '';
 
-        // Nuance definitions
-        const nuances = {
-            'technological-centralized': {
-                name: 'Technocratic',
-                description: 'Top-down control using advanced technology'
-            },
-            'technological-decentralized': {
-                name: 'Networked',
-                description: 'Distributed tech empowers individuals and communities'
-            },
-            'value-driven-centralized': {
-                name: 'Institutional',
-                description: 'Strong governments or organizations drive change through shared values'
-            },
-            'value-driven-decentralized': {
-                name: 'Grassroots',
-                description: 'Communities and movements shape the future through cultural shift'
-            }
-        };
+            let formatted = `\n\n=== ARCHETYPE: ${archetype.name.toUpperCase()} ===\n`;
+            formatted += `Description: ${archetype.description}\n`;
 
-        // Axis labels for display
-        const axisLabels = {
-            'abundance': 'Abundance',
-            'constraints': 'Constraints',
-            'continuity': 'Continuity',
-            'rupture': 'Rupture',
-            'technological': 'Technological',
-            'value-driven': 'Value-driven',
-            'centralized': 'Centralized',
-            'decentralized': 'Decentralized'
-        };
+            if (archetype.writing_guidance) {
+                formatted += `\nWriting Guidance: ${archetype.writing_guidance}\n`;
+            }
+            if (archetype.key_vocabulary) {
+                formatted += `\nKey Vocabulary: ${archetype.key_vocabulary}\n`;
+            }
+            if (archetype.typical_narratives) {
+                formatted += `\nTypical Narratives: ${archetype.typical_narratives}\n`;
+            }
+            if (archetype.diagnostic_questions) {
+                formatted += `\nDiagnostic Questions: ${archetype.diagnostic_questions}\n`;
+            }
+
+            return formatted;
+        }
+
+        // Get writing guide content
+        function getWritingGuide() {
+            if (!dataCache.writingGuide || dataCache.writingGuide.length === 0) return '';
+            return dataCache.writingGuide.map(w => w.content).join('\n\n');
+        }
 
         // DOM elements
         const axisA = document.getElementById('axis-a');
@@ -738,10 +758,10 @@
         const axisC = document.getElementById('axis-c');
         const axisD = document.getElementById('axis-d');
 
-        const archetypeName = document.getElementById('archetype-name');
-        const archetypeDesc = document.getElementById('archetype-desc');
-        const nuanceName = document.getElementById('nuance-name');
-        const nuanceDesc = document.getElementById('nuance-desc');
+        const archetypeNameEl = document.getElementById('archetype-name');
+        const archetypeDescEl = document.getElementById('archetype-desc');
+        const nuanceNameEl = document.getElementById('nuance-name');
+        const nuanceDescEl = document.getElementById('nuance-desc');
 
         const summaryArchetype = document.getElementById('summary-archetype');
         const summaryNuance = document.getElementById('summary-nuance');
@@ -777,56 +797,65 @@
             generateBtn.disabled = !complete;
             generateHint.classList.toggle('hidden', complete);
 
-            // Show API key section if selections are complete
             if (complete && !apiKeySection.classList.contains('visible')) {
                 apiKeySection.classList.add('visible');
             }
         }
 
-        // Update archetype based on A + B
-        function updateArchetype() {
+        // Update archetype and nuance display based on selections
+        async function updateDisplay() {
             const a = axisA.value;
             const b = axisB.value;
-
-            dots.a.classList.toggle('active', a !== '');
-            dots.b.classList.toggle('active', b !== '');
-
-            if (a && b) {
-                const key = `${a}-${b}`;
-                const archetype = archetypes[key];
-                if (archetype) {
-                    archetypeName.textContent = archetype.name;
-                    archetypeDesc.innerHTML = archetype.description;
-                    summaryArchetype.textContent = archetype.name;
-                }
-            } else {
-                archetypeName.textContent = '—';
-                archetypeDesc.innerHTML = '<span class="placeholder-state">Select Axis A and B to reveal archetype</span>';
-                summaryArchetype.textContent = '—';
-            }
-
-            updateButtonState();
-        }
-
-        // Update nuance based on C + D
-        function updateNuance() {
             const c = axisC.value;
             const d = axisD.value;
 
+            // Update status dots
+            dots.a.classList.toggle('active', a !== '');
+            dots.b.classList.toggle('active', b !== '');
             dots.c.classList.toggle('active', c !== '');
             dots.d.classList.toggle('active', d !== '');
 
-            if (c && d) {
-                const key = `${c}-${d}`;
-                const nuance = nuances[key];
-                if (nuance) {
-                    nuanceName.textContent = nuance.name;
-                    nuanceDesc.innerHTML = nuance.description;
-                    summaryNuance.textContent = nuance.name;
+            // Ensure data is loaded
+            await loadAllData();
+
+            // Update archetype display (based on A + B)
+            if (a && b) {
+                // Find any mapping that matches A and B to get the archetype
+                const mapping = dataCache.archetypeMapping.find(m => m.axis_a === a && m.axis_b === b);
+                if (mapping) {
+                    const archetype = findArchetype(mapping.archetype_id);
+                    if (archetype) {
+                        archetypeNameEl.textContent = archetype.name.toUpperCase();
+                        archetypeDescEl.innerHTML = archetype.description;
+                        summaryArchetype.textContent = archetype.name.toUpperCase();
+                    }
+                } else {
+                    archetypeNameEl.textContent = '—';
+                    archetypeDescEl.innerHTML = '<span class="placeholder-state">No archetype found for this combination</span>';
+                    summaryArchetype.textContent = '—';
                 }
             } else {
-                nuanceName.textContent = '—';
-                nuanceDesc.innerHTML = '<span class="placeholder-state">Select Axis C and D to reveal nuance</span>';
+                archetypeNameEl.textContent = '—';
+                archetypeDescEl.innerHTML = '<span class="placeholder-state">Select Axis A and B to reveal archetype</span>';
+                summaryArchetype.textContent = '—';
+            }
+
+            // Update nuance display (based on C + D)
+            if (c && d) {
+                // Find any mapping that matches C and D to get the nuance
+                const mapping = dataCache.archetypeMapping.find(m => m.axis_c === c && m.axis_d === d);
+                if (mapping) {
+                    nuanceNameEl.textContent = mapping.nuance_name;
+                    nuanceDescEl.innerHTML = mapping.nuance_description || '';
+                    summaryNuance.textContent = mapping.nuance_name;
+                } else {
+                    nuanceNameEl.textContent = '—';
+                    nuanceDescEl.innerHTML = '<span class="placeholder-state">No nuance found for this combination</span>';
+                    summaryNuance.textContent = '—';
+                }
+            } else {
+                nuanceNameEl.textContent = '—';
+                nuanceDescEl.innerHTML = '<span class="placeholder-state">Select Axis C and D to reveal nuance</span>';
                 summaryNuance.textContent = '—';
             }
 
@@ -859,52 +888,59 @@
                 return;
             }
 
-            // Get current selections
-            const a = axisA.value;
-            const b = axisB.value;
-            const c = axisC.value;
-            const d = axisD.value;
-
-            const archetypeKey = `${a}-${b}`;
-            const nuanceKey = `${c}-${d}`;
-            const archetype = archetypes[archetypeKey];
-            const nuance = nuances[nuanceKey];
-
             // Show loading state
             hideError();
             generateBtn.disabled = true;
             generateBtn.classList.add('loading');
             generateBtn.textContent = 'Generating';
 
-            scenarioOutput.innerHTML = '<span class="placeholder-state">Fetching sector knowledge...</span>';
+            scenarioOutput.innerHTML = '<span class="placeholder-state">Loading data...</span>';
 
-            // Fetch sector knowledge from Supabase
-            const sectorKnowledge = await fetchSectorKnowledge();
-            const sectorContext = formatSectorKnowledge(sectorKnowledge);
+            // Ensure data is loaded
+            await loadAllData();
+
+            // Get current selections
+            const a = axisA.value;
+            const b = axisB.value;
+            const c = axisC.value;
+            const d = axisD.value;
+
+            // Find the exact mapping
+            const mapping = findMapping(a, b, c, d);
+            const archetype = mapping ? findArchetype(mapping.archetype_id) : null;
+
+            if (!mapping || !archetype) {
+                showError('No scenario configuration found for this combination. Please try different selections.');
+                generateBtn.classList.remove('loading');
+                generateBtn.textContent = 'Generate Scenario';
+                generateBtn.disabled = false;
+                return;
+            }
 
             scenarioOutput.innerHTML = '<span class="placeholder-state">Generating scenario...</span>';
 
-            // Build the prompt
-            const prompt = `You are a futures strategist writing for the Dutch Ministry of Justice and Security (JenV).
+            // Build the prompt from all data sources
+            const writingGuide = getWritingGuide();
+            const archetypeContext = formatArchetypeForPrompt(archetype);
+            const sectorContext = formatSectorKnowledge();
 
-Generate a scenario based on:
-- Archetype: ${archetype.name}
-- Resource Horizon: ${axisLabels[a]}
-- Systemic Structure: ${axisLabels[b]}
-- Primary Driver: ${axisLabels[c]}
-- Social Organization: ${axisLabels[d]}
+            const prompt = `${writingGuide}
 
-JenV Context: Government ministry responsible for justice, security, law enforcement, cybersecurity, and protecting citizens' rights. Key agencies include Police, NCSC (cybersecurity), Public Prosecution Service, Immigration Service. They are preparing for quantum computing threats to encryption.${sectorContext}
+=== CURRENT SCENARIO PARAMETERS ===
+Archetype: ${archetype.name}
+Nuance: ${mapping.nuance_name}
 
-Requirements:
-- Length: 150-200 words (1 minute read)
-- Make all four binary choices recognizable in the scenario
-- Use compelling storytelling with a specific moment or character
-- Focus on AI, Quantum Computing, or Biotech implications
-- English level B2 (clear, accessible)
-- Use government language (citizens, not customers)
-- Reference actual JenV agencies where relevant
-- Incorporate relevant details from the sector knowledge base above`;
+Axis Selections:
+- Resource Horizon (A): ${mapping.axis_a_label || a}
+- Systemic Structure (B): ${mapping.axis_b_label || b}
+- Primary Driver (C): ${mapping.axis_c_label || c}
+- Social Organization (D): ${mapping.axis_d_label || d}
+${archetypeContext}
+=== NUANCE: ${mapping.nuance_name.toUpperCase()} ===
+${mapping.nuance_description || ''}
+${sectorContext}
+
+Generate a scenario for the Dutch Ministry of Justice and Security (JenV) based on all the above context. The scenario should clearly reflect the ${archetype.name} archetype with ${mapping.nuance_name} nuance, making all four axis choices recognizable in the narrative.`;
 
             try {
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
@@ -920,7 +956,7 @@ Requirements:
                         }],
                         generationConfig: {
                             temperature: 0.8,
-                            maxOutputTokens: 500,
+                            maxOutputTokens: 800,
                         }
                     })
                 });
@@ -951,24 +987,22 @@ Requirements:
 <div class="scenario-meta">
 <span class="highlight">Your selections:</span>
 • Archetype: ${archetype.name}
-• Nuance: ${nuance.name}
-• Resource Horizon: ${axisLabels[a]} | Systemic Structure: ${axisLabels[b]}
-• Primary Driver: ${axisLabels[c]} | Social Organization: ${axisLabels[d]}
+• Nuance: ${mapping.nuance_name}
+• Resource Horizon: ${mapping.axis_a_label || a} | Systemic Structure: ${mapping.axis_b_label || b}
+• Primary Driver: ${mapping.axis_c_label || c} | Social Organization: ${mapping.axis_d_label || d}
 </div>`;
 
             } catch (error) {
                 console.error('Generation error:', error);
                 showError(error.message || 'Failed to generate scenario. Please try again.');
 
-                // Reset scenario output
                 scenarioOutput.innerHTML = `[Scenario generation failed]
 
 <span class="highlight">Your selections:</span>
-• Archetype: <span id="summary-archetype">${archetype.name}</span>
-• Nuance: <span id="summary-nuance">${nuance.name}</span>
+• Archetype: ${archetype?.name || '—'}
+• Nuance: ${mapping?.nuance_name || '—'}
 • Context: Ministry of Justice and Security (JenV), focusing on AI, Quantum, and Biotech`;
             } finally {
-                // Reset button state
                 generateBtn.classList.remove('loading');
                 generateBtn.textContent = 'Generate Scenario';
                 generateBtn.disabled = false;
@@ -976,10 +1010,10 @@ Requirements:
         }
 
         // Event listeners for selects
-        axisA.addEventListener('change', updateArchetype);
-        axisB.addEventListener('change', updateArchetype);
-        axisC.addEventListener('change', updateNuance);
-        axisD.addEventListener('change', updateNuance);
+        axisA.addEventListener('change', updateDisplay);
+        axisB.addEventListener('change', updateDisplay);
+        axisC.addEventListener('change', updateDisplay);
+        axisD.addEventListener('change', updateDisplay);
 
         // Generate button click
         generateBtn.addEventListener('click', generateScenario);
@@ -1044,6 +1078,11 @@ Requirements:
                 };
                 reader.readAsDataURL(file);
             }
+        });
+
+        // Pre-load data on page load
+        loadAllData().then(() => {
+            console.log('Initial data load complete');
         });
     </script>
 </body>
