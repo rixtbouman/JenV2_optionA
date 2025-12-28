@@ -636,6 +636,7 @@
             archetypeMapping: null,
             writingGuide: null,
             sectorKnowledge: null,
+            technologyKnowledge: null,
             loaded: false
         };
 
@@ -668,24 +669,27 @@
 
             console.log('Loading data from Supabase...');
 
-            const [archetypes, archetypeMapping, writingGuide, sectorKnowledge] = await Promise.all([
+            const [archetypes, archetypeMapping, writingGuide, sectorKnowledge, technologyKnowledge] = await Promise.all([
                 fetchFromSupabase('archetypes'),
                 fetchFromSupabase('archetype_mapping'),
                 fetchFromSupabase('writing_guide'),
-                fetchFromSupabase('sector_knowledge')
+                fetchFromSupabase('sector_knowledge'),
+                fetchFromSupabase('technology_knowledge')
             ]);
 
             dataCache.archetypes = archetypes || [];
             dataCache.archetypeMapping = archetypeMapping || [];
             dataCache.writingGuide = writingGuide || [];
             dataCache.sectorKnowledge = sectorKnowledge || [];
+            dataCache.technologyKnowledge = technologyKnowledge || [];
             dataCache.loaded = true;
 
             console.log('Data loaded:', {
                 archetypes: dataCache.archetypes.length,
                 mappings: dataCache.archetypeMapping.length,
                 writingGuide: dataCache.writingGuide.length,
-                sectorKnowledge: dataCache.sectorKnowledge.length
+                sectorKnowledge: dataCache.sectorKnowledge.length,
+                technologyKnowledge: dataCache.technologyKnowledge.length
             });
         }
 
@@ -715,6 +719,28 @@
             let formatted = '\n\n=== SECTOR KNOWLEDGE BASE ===\n';
             for (const [category, items] of Object.entries(grouped)) {
                 formatted += `\n[${category.toUpperCase()}]\n`;
+                for (const item of items) {
+                    formatted += `• ${item.title}: ${item.content}\n`;
+                }
+            }
+
+            return formatted;
+        }
+
+        // Format technology knowledge for prompt
+        function formatTechnologyKnowledge() {
+            const knowledge = dataCache.technologyKnowledge;
+            if (!knowledge || knowledge.length === 0) return '';
+
+            const grouped = knowledge.reduce((acc, item) => {
+                if (!acc[item.technology]) acc[item.technology] = [];
+                acc[item.technology].push(item);
+                return acc;
+            }, {});
+
+            let formatted = '\n\n=== TECHNOLOGY KNOWLEDGE BASE ===\n';
+            for (const [technology, items] of Object.entries(grouped)) {
+                formatted += `\n[${technology.toUpperCase()}]\n`;
                 for (const item of items) {
                     formatted += `• ${item.title}: ${item.content}\n`;
                 }
@@ -923,6 +949,7 @@
             const writingGuide = getWritingGuide();
             const archetypeContext = formatArchetypeForPrompt(archetype);
             const sectorContext = formatSectorKnowledge();
+            const technologyContext = formatTechnologyKnowledge();
 
             const prompt = `${writingGuide}
 
@@ -939,6 +966,7 @@ ${archetypeContext}
 === NUANCE: ${mapping.nuance_name.toUpperCase()} ===
 ${mapping.nuance_description || ''}
 ${sectorContext}
+${technologyContext}
 
 Generate a scenario for the Dutch Ministry of Justice and Security (JenV) based on all the above context. The scenario should clearly reflect the ${archetype.name} archetype with ${mapping.nuance_name} nuance, making all four axis choices recognizable in the narrative.`;
 
