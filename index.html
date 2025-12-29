@@ -34,81 +34,81 @@
             z-index: 0;
         }
 
-        /* Large blue circle - top right */
+        /* Large blue circle - top right (more prominent) */
         .circle-1 {
-            width: 700px;
-            height: 700px;
-            background: radial-gradient(circle, rgba(0, 0, 255, 0.35) 0%, rgba(0, 0, 255, 0.15) 35%, transparent 65%);
+            width: 750px;
+            height: 750px;
+            background: radial-gradient(circle, rgba(0, 0, 255, 0.4) 0%, rgba(0, 0, 255, 0.18) 35%, transparent 65%);
             top: -250px;
             right: -200px;
             animation: float1 25s ease-in-out infinite;
         }
 
-        /* Large magenta circle - bottom left */
+        /* Large magenta circle - bottom left (reduced opacity for QDNL brand) */
         .circle-2 {
-            width: 600px;
-            height: 600px;
-            background: radial-gradient(circle, rgba(255, 0, 255, 0.3) 0%, rgba(255, 0, 255, 0.12) 35%, transparent 65%);
+            width: 550px;
+            height: 550px;
+            background: radial-gradient(circle, rgba(255, 0, 255, 0.2) 0%, rgba(255, 0, 255, 0.08) 35%, transparent 65%);
             bottom: -100px;
             left: -200px;
             animation: float2 30s ease-in-out infinite;
         }
 
-        /* Medium red circle - bottom right */
+        /* Medium blue circle - bottom right (was red) */
         .circle-3 {
-            width: 450px;
-            height: 450px;
-            background: radial-gradient(circle, rgba(255, 0, 0, 0.25) 0%, rgba(255, 0, 0, 0.08) 40%, transparent 65%);
+            width: 480px;
+            height: 480px;
+            background: radial-gradient(circle, rgba(0, 0, 255, 0.3) 0%, rgba(0, 0, 255, 0.1) 40%, transparent 65%);
             bottom: 10%;
             right: -50px;
             animation: float3 22s ease-in-out infinite;
         }
 
-        /* Medium blue circle - left side overlap */
+        /* Medium blue circle - left side overlap (more prominent) */
         .circle-4 {
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(circle, rgba(0, 0, 255, 0.28) 0%, rgba(0, 0, 255, 0.1) 35%, transparent 65%);
+            width: 550px;
+            height: 550px;
+            background: radial-gradient(circle, rgba(0, 0, 255, 0.35) 0%, rgba(0, 0, 255, 0.12) 35%, transparent 65%);
             top: 25%;
             left: -150px;
             animation: float4 28s ease-in-out infinite;
         }
 
-        /* Small magenta circle - top area */
+        /* Medium blue circle - top area (was magenta) */
         .circle-5 {
-            width: 350px;
-            height: 350px;
-            background: radial-gradient(circle, rgba(255, 0, 255, 0.3) 0%, rgba(255, 0, 255, 0.1) 40%, transparent 65%);
+            width: 380px;
+            height: 380px;
+            background: radial-gradient(circle, rgba(0, 0, 255, 0.28) 0%, rgba(0, 0, 255, 0.1) 40%, transparent 65%);
             top: 5%;
             right: 25%;
             animation: float5 20s ease-in-out infinite;
         }
 
-        /* Small blue circle - middle right */
+        /* Small blue circle - middle right (more prominent) */
         .circle-6 {
-            width: 300px;
-            height: 300px;
-            background: radial-gradient(circle, rgba(0, 0, 255, 0.25) 0%, rgba(0, 0, 255, 0.08) 40%, transparent 65%);
+            width: 320px;
+            height: 320px;
+            background: radial-gradient(circle, rgba(0, 0, 255, 0.3) 0%, rgba(0, 0, 255, 0.1) 40%, transparent 65%);
             top: 50%;
             right: 5%;
             animation: float6 24s ease-in-out infinite;
         }
 
-        /* Small red circle - top left */
+        /* Small blue circle - top left (was red) */
         .circle-7 {
-            width: 280px;
-            height: 280px;
-            background: radial-gradient(circle, rgba(255, 0, 0, 0.2) 0%, rgba(255, 0, 0, 0.06) 40%, transparent 65%);
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(0, 0, 255, 0.22) 0%, rgba(0, 0, 255, 0.08) 40%, transparent 65%);
             top: 8%;
             left: 10%;
             animation: float7 26s ease-in-out infinite;
         }
 
-        /* Tiny magenta accent - bottom middle */
+        /* Small magenta accent - bottom middle (QDNL brand accent) */
         .circle-8 {
-            width: 200px;
-            height: 200px;
-            background: radial-gradient(circle, rgba(255, 0, 255, 0.35) 0%, rgba(255, 0, 255, 0.1) 40%, transparent 65%);
+            width: 220px;
+            height: 220px;
+            background: radial-gradient(circle, rgba(255, 0, 255, 0.25) 0%, rgba(255, 0, 255, 0.08) 40%, transparent 65%);
             bottom: 20%;
             left: 40%;
             animation: float8 18s ease-in-out infinite;
@@ -396,12 +396,12 @@
             height: 4px;
         }
 
-        .result-box:first-child::before {
+        .result-box::before {
             background: linear-gradient(90deg, #0000FF, #4040FF);
         }
 
-        .result-box:last-child::before {
-            background: linear-gradient(90deg, #FF00FF, #FF40FF);
+        .archetype-box-full {
+            width: 100%;
         }
 
         .result-label {
@@ -418,17 +418,16 @@
             font-weight: 200;
             font-size: 1.8rem;
             color: #0000FF;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             letter-spacing: -0.3px;
         }
 
-        .nuance-name {
+        .archetype-description {
             font-family: 'Outfit', sans-serif;
-            font-weight: 200;
-            font-size: 1.8rem;
-            color: #FF00FF;
-            margin-bottom: 12px;
-            letter-spacing: -0.3px;
+            font-weight: 400;
+            font-size: 0.95rem;
+            color: #555;
+            line-height: 1.5;
         }
 
         .result-description {
@@ -542,7 +541,7 @@
             width: 100%;
             padding: 16px 28px;
             margin-top: 16px;
-            background: linear-gradient(135deg, #FF00FF 0%, #FF40FF 100%);
+            background: linear-gradient(135deg, #0000FF 0%, #2020FF 100%);
             border: none;
             border-radius: 12px;
             color: #FFFFFF;
@@ -553,7 +552,7 @@
             cursor: not-allowed;
             opacity: 0.4;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(255, 0, 255, 0.2);
+            box-shadow: 0 4px 12px rgba(0, 0, 255, 0.2);
         }
 
         .scan-btn:disabled {
@@ -567,13 +566,13 @@
         }
 
         .scan-btn:not(:disabled):hover {
-            background: linear-gradient(135deg, #DD00DD 0%, #DD20DD 100%);
+            background: linear-gradient(135deg, #0000DD 0%, #1818DD 100%);
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 0, 255, 0.3);
+            box-shadow: 0 6px 20px rgba(0, 0, 255, 0.3);
         }
 
         .scan-btn.loading {
-            background: #a080a0;
+            background: #8080a0;
             cursor: wait;
             box-shadow: none;
         }
@@ -613,7 +612,7 @@
             font-size: 0.65rem;
             letter-spacing: 2px;
             text-transform: uppercase;
-            color: #886600;
+            color: #0000FF;
             margin-bottom: 10px;
             display: block;
         }
@@ -645,7 +644,7 @@
             font-family: 'Outfit', sans-serif;
             font-weight: 400;
             font-size: 0.85rem;
-            color: #886600;
+            color: #666;
             margin-top: 10px;
         }
 
@@ -895,16 +894,11 @@
 
         <!-- Results Section -->
         <section class="section">
-            <div class="section-label">ARCHETYPE & NUANCE</div>
-            <div class="results-grid">
-                <div class="result-box">
-                    <div class="result-label">ARCHETYPE (A + B)</div>
-                    <div class="archetype-name" id="archetype-name">—</div>
-                </div>
-                <div class="result-box">
-                    <div class="result-label">NUANCE (C + D)</div>
-                    <div class="nuance-name" id="nuance-name">—</div>
-                </div>
+            <div class="section-label">ARCHETYPE</div>
+            <div class="result-box archetype-box-full">
+                <div class="result-label">ARCHETYPE (A + B)</div>
+                <div class="archetype-name" id="archetype-name">—</div>
+                <div class="archetype-description" id="archetype-desc"></div>
             </div>
         </section>
 
@@ -1148,10 +1142,18 @@
         const axisD = document.getElementById('axis-d');
 
         const archetypeNameEl = document.getElementById('archetype-name');
-        const nuanceNameEl = document.getElementById('nuance-name');
+        const archetypeDescEl = document.getElementById('archetype-desc');
 
         const summaryArchetype = document.getElementById('summary-archetype');
         const summaryNuance = document.getElementById('summary-nuance');
+
+        // Short archetype descriptions
+        const archetypeDescriptions = {
+            'continued growth': 'Current systems continue and improve. Technology drives progress.',
+            'discipline': 'Society manages within limits through control and regulation.',
+            'collapse': 'Systems break down. Scarcity and crisis dominate.',
+            'transformation': 'Radical change creates something entirely new.'
+        };
 
         const uploadArea = document.getElementById('uploadArea');
         const imageInput = document.getElementById('imageInput');
@@ -1218,31 +1220,33 @@
                 if (mapping) {
                     const archetype = findArchetype(mapping.archetype_id);
                     if (archetype) {
-                        archetypeNameEl.textContent = archetype.name.toUpperCase();
-                        summaryArchetype.textContent = archetype.name.toUpperCase();
+                        const name = archetype.name.toUpperCase();
+                        archetypeNameEl.textContent = name;
+                        summaryArchetype.textContent = name;
+                        // Show short description
+                        const shortDesc = archetypeDescriptions[archetype.name.toLowerCase()] || '';
+                        archetypeDescEl.textContent = shortDesc;
                     }
                 } else {
                     archetypeNameEl.textContent = '—';
+                    archetypeDescEl.textContent = '';
                     summaryArchetype.textContent = '—';
                 }
             } else {
                 archetypeNameEl.textContent = '—';
+                archetypeDescEl.textContent = '';
                 summaryArchetype.textContent = '—';
             }
 
-            // Update nuance display (based on C + D)
+            // Update nuance in summary (based on C + D) - still needed for scenario generation
             if (c && d) {
-                // Find any mapping that matches C and D to get the nuance
                 const mapping = dataCache.archetypeMapping.find(m => m.axis_c === c && m.axis_d === d);
                 if (mapping) {
-                    nuanceNameEl.textContent = mapping.nuance_name;
                     summaryNuance.textContent = mapping.nuance_name;
                 } else {
-                    nuanceNameEl.textContent = '—';
                     summaryNuance.textContent = '—';
                 }
             } else {
-                nuanceNameEl.textContent = '—';
                 summaryNuance.textContent = '—';
             }
 
