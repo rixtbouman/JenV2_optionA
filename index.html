@@ -524,17 +524,87 @@
             to { transform: rotate(360deg); }
         }
 
-        /* API Key Section */
-        .api-key-section {
-            display: none;
-            margin-bottom: 20px;
-            padding: 20px;
-            background: linear-gradient(135deg, #fff9f0 0%, #fff5e8 100%);
-            border: 1px solid #f0e0c0;
-            border-radius: 12px;
+        /* API Key Section - Top */
+        .api-key-top-section {
+            padding: 24px 32px;
         }
 
-        .api-key-section.visible {
+        .api-key-top-section .api-key-label {
+            margin-bottom: 12px;
+        }
+
+        .api-key-top-section .api-key-help {
+            margin-top: 12px;
+        }
+
+        /* Scan Cards Button */
+        .scan-btn {
+            width: 100%;
+            padding: 16px 28px;
+            margin-top: 16px;
+            background: linear-gradient(135deg, #FF00FF 0%, #FF40FF 100%);
+            border: none;
+            border-radius: 12px;
+            color: #FFFFFF;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: not-allowed;
+            opacity: 0.4;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(255, 0, 255, 0.2);
+        }
+
+        .scan-btn:disabled {
+            background: #c0c4d0;
+            box-shadow: none;
+        }
+
+        .scan-btn:not(:disabled) {
+            cursor: pointer;
+            opacity: 1;
+        }
+
+        .scan-btn:not(:disabled):hover {
+            background: linear-gradient(135deg, #DD00DD 0%, #DD20DD 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 0, 255, 0.3);
+        }
+
+        .scan-btn.loading {
+            background: #a080a0;
+            cursor: wait;
+            box-shadow: none;
+        }
+
+        .scan-btn.loading::after {
+            content: '';
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            margin-left: 12px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            vertical-align: middle;
+        }
+
+        .scan-error {
+            background: linear-gradient(135deg, #fff0f0 0%, #ffe8e8 100%);
+            border: 1px solid #ffcccc;
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin-top: 12px;
+            color: #cc0000;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 400;
+            font-size: 0.95rem;
+            display: none;
+        }
+
+        .scan-error.visible {
             display: block;
         }
 
@@ -755,6 +825,13 @@
             <p class="subtitle">Ministry of Justice and Security (JenV)</p>
         </header>
 
+        <!-- API Key Section -->
+        <section class="section api-key-top-section">
+            <label class="api-key-label" for="api-key">GEMINI API KEY</label>
+            <input type="password" class="api-key-input" id="api-key" placeholder="Enter your Gemini API key...">
+            <p class="api-key-help">Used for both card scanning and scenario generation. Get your API key from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a></p>
+        </section>
+
         <!-- Image Upload Section -->
         <section class="section">
             <div class="section-label">UPLOAD YOUR CARD SPREAD</div>
@@ -767,6 +844,8 @@
                 <button class="remove-image" id="removeImage" type="button">&times;</button>
                 <input type="file" class="upload-input" id="imageInput" accept="image/*" capture="environment">
             </div>
+            <button class="scan-btn" id="scan-btn" disabled>Scan Cards</button>
+            <div class="scan-error" id="scan-error"></div>
         </section>
 
         <!-- Card Selection Section -->
@@ -821,16 +900,10 @@
                 <div class="result-box">
                     <div class="result-label">ARCHETYPE (A + B)</div>
                     <div class="archetype-name" id="archetype-name">—</div>
-                    <div class="result-description" id="archetype-desc">
-                        <span class="placeholder-state">Select Axis A and B to reveal archetype</span>
-                    </div>
                 </div>
                 <div class="result-box">
                     <div class="result-label">NUANCE (C + D)</div>
                     <div class="nuance-name" id="nuance-name">—</div>
-                    <div class="result-description" id="nuance-desc">
-                        <span class="placeholder-state">Select Axis C and D to reveal nuance</span>
-                    </div>
                 </div>
             </div>
         </section>
@@ -849,11 +922,6 @@
                 </div>
             </div>
             <div class="error-message" id="error-message"></div>
-            <div class="api-key-section" id="api-key-section">
-                <label class="api-key-label" for="api-key">GEMINI API KEY</label>
-                <input type="password" class="api-key-input" id="api-key" placeholder="Enter your Gemini API key...">
-                <p class="api-key-help">Get your API key from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a></p>
-            </div>
             <button class="generate-btn" id="generate-btn" disabled>Generate Scenario</button>
             <p class="generate-hint" id="generate-hint">Select all four axes to enable generation</p>
         </section>
@@ -1080,9 +1148,7 @@
         const axisD = document.getElementById('axis-d');
 
         const archetypeNameEl = document.getElementById('archetype-name');
-        const archetypeDescEl = document.getElementById('archetype-desc');
         const nuanceNameEl = document.getElementById('nuance-name');
-        const nuanceDescEl = document.getElementById('nuance-desc');
 
         const summaryArchetype = document.getElementById('summary-archetype');
         const summaryNuance = document.getElementById('summary-nuance');
@@ -1091,13 +1157,17 @@
         const imageInput = document.getElementById('imageInput');
         const uploadedImage = document.getElementById('uploadedImage');
         const removeImageBtn = document.getElementById('removeImage');
+        const scanBtn = document.getElementById('scan-btn');
+        const scanError = document.getElementById('scan-error');
 
         const generateBtn = document.getElementById('generate-btn');
         const generateHint = document.getElementById('generate-hint');
-        const apiKeySection = document.getElementById('api-key-section');
         const apiKeyInput = document.getElementById('api-key');
         const scenarioOutput = document.getElementById('scenario-output');
         const errorMessage = document.getElementById('error-message');
+
+        // Track if image is uploaded
+        let hasUploadedImage = false;
 
         // Status dots
         const dots = {
@@ -1117,10 +1187,12 @@
             const complete = allSelectionsComplete();
             generateBtn.disabled = !complete;
             generateHint.classList.toggle('hidden', complete);
+        }
 
-            if (complete && !apiKeySection.classList.contains('visible')) {
-                apiKeySection.classList.add('visible');
-            }
+        // Update scan button state
+        function updateScanButtonState() {
+            const apiKey = apiKeyInput.value.trim();
+            scanBtn.disabled = !(hasUploadedImage && apiKey);
         }
 
         // Update archetype and nuance display based on selections
@@ -1147,17 +1219,14 @@
                     const archetype = findArchetype(mapping.archetype_id);
                     if (archetype) {
                         archetypeNameEl.textContent = archetype.name.toUpperCase();
-                        archetypeDescEl.innerHTML = archetype.description;
                         summaryArchetype.textContent = archetype.name.toUpperCase();
                     }
                 } else {
                     archetypeNameEl.textContent = '—';
-                    archetypeDescEl.innerHTML = '<span class="placeholder-state">No archetype found for this combination</span>';
                     summaryArchetype.textContent = '—';
                 }
             } else {
                 archetypeNameEl.textContent = '—';
-                archetypeDescEl.innerHTML = '<span class="placeholder-state">Select Axis A and B to reveal archetype</span>';
                 summaryArchetype.textContent = '—';
             }
 
@@ -1167,16 +1236,13 @@
                 const mapping = dataCache.archetypeMapping.find(m => m.axis_c === c && m.axis_d === d);
                 if (mapping) {
                     nuanceNameEl.textContent = mapping.nuance_name;
-                    nuanceDescEl.innerHTML = mapping.nuance_description || '';
                     summaryNuance.textContent = mapping.nuance_name;
                 } else {
                     nuanceNameEl.textContent = '—';
-                    nuanceDescEl.innerHTML = '<span class="placeholder-state">No nuance found for this combination</span>';
                     summaryNuance.textContent = '—';
                 }
             } else {
                 nuanceNameEl.textContent = '—';
-                nuanceDescEl.innerHTML = '<span class="placeholder-state">Select Axis C and D to reveal nuance</span>';
                 summaryNuance.textContent = '—';
             }
 
@@ -1334,6 +1400,143 @@ Generate a scenario for the Dutch Ministry of Justice and Security (JenV) based 
             }
         }
 
+        // Show scan error message
+        function showScanError(message) {
+            scanError.textContent = message;
+            scanError.classList.add('visible');
+        }
+
+        // Hide scan error message
+        function hideScanError() {
+            scanError.classList.remove('visible');
+        }
+
+        // Scan cards using Gemini Vision API
+        async function scanCards() {
+            const apiKey = apiKeyInput.value.trim();
+
+            if (!apiKey) {
+                showScanError('Please enter your Gemini API key');
+                apiKeyInput.focus();
+                return;
+            }
+
+            if (!hasUploadedImage || !uploadedImage.src) {
+                showScanError('Please upload an image of your cards first');
+                return;
+            }
+
+            // Show loading state
+            hideScanError();
+            scanBtn.disabled = true;
+            scanBtn.classList.add('loading');
+            scanBtn.textContent = 'Scanning';
+
+            const prompt = `Look at this photo of 4 cards. Each card shows one of these options:
+- Card A (Resource Horizon): 'Plenty' or 'Limits'
+- Card B (Systemic Structure): 'Stable' or 'Breaks'
+- Card C (Primary Driver): 'Technology' or 'Values'
+- Card D (Social Organization): 'Centralized' or 'Decentralized'
+
+Return ONLY a JSON object like: {"a": "plenty", "b": "stable", "c": "technology", "d": "centralized"}
+Use lowercase values. If you can't read a card, use null for that value.`;
+
+            try {
+                // Get image data (remove data URL prefix)
+                const imageData = uploadedImage.src.split(',')[1];
+                const mimeType = uploadedImage.src.split(';')[0].split(':')[1] || 'image/jpeg';
+
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [
+                                {
+                                    text: prompt
+                                },
+                                {
+                                    inline_data: {
+                                        mime_type: mimeType,
+                                        data: imageData
+                                    }
+                                }
+                            ]
+                        }],
+                        generationConfig: {
+                            temperature: 0.1,
+                            maxOutputTokens: 200,
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    if (response.status === 400) {
+                        throw new Error('Invalid API key or request. Please check your Gemini API key.');
+                    } else if (response.status === 403) {
+                        throw new Error('API key does not have permission. Please check your Gemini API key settings.');
+                    } else if (response.status === 429) {
+                        throw new Error('Rate limit exceeded. Please wait a moment and try again.');
+                    } else {
+                        throw new Error(errorData.error?.message || `API error: ${response.status}`);
+                    }
+                }
+
+                const data = await response.json();
+
+                if (!data.candidates || !data.candidates[0]?.content?.parts?.[0]?.text) {
+                    throw new Error('No response from vision API. Please try again.');
+                }
+
+                const responseText = data.candidates[0].content.parts[0].text;
+
+                // Extract JSON from response (handle markdown code blocks)
+                let jsonStr = responseText;
+                const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    jsonStr = jsonMatch[0];
+                }
+
+                const cardValues = JSON.parse(jsonStr);
+
+                // Check for null values
+                const nullCards = [];
+                if (cardValues.a === null) nullCards.push('A (Resource Horizon)');
+                if (cardValues.b === null) nullCards.push('B (Systemic Structure)');
+                if (cardValues.c === null) nullCards.push('C (Primary Driver)');
+                if (cardValues.d === null) nullCards.push('D (Social Organization)');
+
+                // Fill in the dropdowns with scanned values
+                if (cardValues.a) axisA.value = cardValues.a.toLowerCase();
+                if (cardValues.b) axisB.value = cardValues.b.toLowerCase();
+                if (cardValues.c) axisC.value = cardValues.c.toLowerCase();
+                if (cardValues.d) axisD.value = cardValues.d.toLowerCase();
+
+                // Update display after filling dropdowns
+                await updateDisplay();
+
+                // Show warning if some cards couldn't be read
+                if (nullCards.length > 0) {
+                    showScanError(`Could not read: ${nullCards.join(', ')}. Please select manually.`);
+                }
+
+            } catch (error) {
+                console.error('Scan error:', error);
+                if (error instanceof SyntaxError) {
+                    showScanError('Could not parse card values. Please select manually.');
+                } else {
+                    showScanError(error.message || 'Failed to scan cards. Please try again or select manually.');
+                }
+            } finally {
+                scanBtn.classList.remove('loading');
+                scanBtn.textContent = 'Scan Cards';
+                updateScanButtonState();
+            }
+        }
+
         // Event listeners for selects
         axisA.addEventListener('change', updateDisplay);
         axisB.addEventListener('change', updateDisplay);
@@ -1343,12 +1546,18 @@ Generate a scenario for the Dutch Ministry of Justice and Security (JenV) based 
         // Generate button click
         generateBtn.addEventListener('click', generateScenario);
 
+        // Scan button click
+        scanBtn.addEventListener('click', scanCards);
+
         // Allow Enter key in API input to trigger generation
         apiKeyInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && !generateBtn.disabled) {
                 generateScenario();
             }
         });
+
+        // Update scan button when API key changes
+        apiKeyInput.addEventListener('input', updateScanButtonState);
 
         // Image upload functionality
         uploadArea.addEventListener('click', (e) => {
@@ -1364,6 +1573,8 @@ Generate a scenario for the Dutch Ministry of Justice and Security (JenV) based 
                 reader.onload = (e) => {
                     uploadedImage.src = e.target.result;
                     uploadArea.classList.add('has-image');
+                    hasUploadedImage = true;
+                    updateScanButtonState();
                 };
                 reader.readAsDataURL(file);
             }
@@ -1374,6 +1585,8 @@ Generate a scenario for the Dutch Ministry of Justice and Security (JenV) based 
             uploadedImage.src = '';
             uploadArea.classList.remove('has-image');
             imageInput.value = '';
+            hasUploadedImage = false;
+            updateScanButtonState();
         });
 
         // Drag and drop support
@@ -1400,6 +1613,8 @@ Generate a scenario for the Dutch Ministry of Justice and Security (JenV) based 
                 reader.onload = (e) => {
                     uploadedImage.src = e.target.result;
                     uploadArea.classList.add('has-image');
+                    hasUploadedImage = true;
+                    updateScanButtonState();
                 };
                 reader.readAsDataURL(file);
             }
